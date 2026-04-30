@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NCCN Breast Cancer — Decision Making Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --card: #161f35;
+    --border: #1e2d4a;
+    --accent: #e84393;
+    --accent2: #00d4ff;
+    --gold: #f5c842;
+    --text: #e8edf5;
+    --muted: #8899b4;
+    --correct: #00e5a0;
+    --wrong: #ff4d6d;
+    --option-hover: #1a2a47;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BG GRID */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.12;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb1 { width: 500px; height: 500px; background: var(--accent); top: -100px; right: -100px; }
+  .orb2 { width: 400px; height: 400px; background: var(--accent2); bottom: 100px; left: -100px; }
+
+  /* HEADER */
+  header {
+    position: relative; z-index: 10;
+    padding: 2.5rem 2rem 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(10,15,30,0.9) 0%, transparent 100%);
+  }
+  .badge {
+    display: inline-block;
+    font-size: 0.7rem; letter-spacing: 0.18em; font-weight: 600;
+    color: var(--accent2);
+    border: 1px solid rgba(0,212,255,0.3);
+    padding: 0.3rem 1rem; border-radius: 100px;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+  }
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 900;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fff 30%, var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  header p {
+    margin-top: 0.6rem;
+    color: var(--muted); font-size: 0.9rem;
+  }
+
+  /* PROGRESS */
+  #progress-wrap {
+    position: relative; z-index: 10;
+    max-width: 800px; margin: 1.5rem auto 0;
+    padding: 0 2rem;
+  }
+  .progress-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.8rem; color: var(--muted); margin-bottom: 0.5rem;
+  }
+  .progress-bar-bg {
+    height: 4px; background: var(--border); border-radius: 100px; overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 100px;
+    transition: width 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .score-badge {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    background: rgba(245,200,66,0.1); border: 1px solid rgba(245,200,66,0.25);
+    color: var(--gold); font-size: 0.82rem; font-weight: 600;
+    padding: 0.3rem 0.8rem; border-radius: 100px;
+  }
+
+  /* MAIN */
+  main {
+    position: relative; z-index: 10;
+    max-width: 800px; margin: 2rem auto;
+    padding: 0 1.5rem 4rem;
+  }
+
+  /* QUESTION CARD */
+  .q-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem 2rem 1.5rem;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+    animation: fadeUp 0.4s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-meta {
+    display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.4rem;
+  }
+  .q-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem; font-weight: 900; color: var(--accent);
+    line-height: 1; min-width: 2.5rem;
+  }
+  .q-tag {
+    font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent2); border: 1px solid rgba(0,212,255,0.25);
+    padding: 0.25rem 0.7rem; border-radius: 100px;
+  }
+  .q-text {
+    font-size: 1.08rem; line-height: 1.65; font-weight: 500;
+    color: var(--text); margin-bottom: 1.8rem;
+  }
+
+  /* OPTIONS */
+  .options { display: flex; flex-direction: column; gap: 0.75rem; }
+  .option {
+    display: flex; align-items: flex-start; gap: 1rem;
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 0.9rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+  .option:hover:not(.disabled) {
+    background: var(--option-hover);
+    border-color: rgba(0,212,255,0.4);
+    transform: translateX(4px);
+  }
+  .option.disabled { cursor: default; pointer-events: none; }
+  .opt-letter {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700; color: var(--muted);
+    transition: all 0.2s;
+  }
+  .opt-text { font-size: 0.95rem; line-height: 1.5; padding-top: 3px; }
+
+  /* States */
+  .option.correct { border-color: var(--correct); background: rgba(0,229,160,0.08); }
+  .option.correct .opt-letter { background: var(--correct); color: #000; }
+  .option.wrong   { border-color: var(--wrong);   background: rgba(255,77,109,0.08); }
+  .option.wrong   .opt-letter { background: var(--wrong);   color: #fff; }
+
+  /* EXPLANATION */
+  .explanation {
+    margin-top: 1.4rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1.2rem;
+    animation: fadeUp 0.35s ease both;
+    display: none;
+  }
+  .explanation.show { display: block; }
+  .exp-header {
+    display: flex; align-items: center; gap: 0.6rem;
+    margin-bottom: 0.8rem;
+  }
+  .exp-icon {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.85rem;
+  }
+  .exp-icon.c { background: rgba(0,229,160,0.15); color: var(--correct); }
+  .exp-icon.w { background: rgba(255,77,109,0.15); color: var(--wrong); }
+  .exp-label { font-weight: 700; font-size: 0.9rem; }
+  .exp-label.c { color: var(--correct); }
+  .exp-label.w { color: var(--wrong); }
+  .exp-text {
+    font-size: 0.9rem; line-height: 1.7; color: #b8c8df;
+    background: rgba(255,255,255,0.03);
+    border-left: 3px solid var(--accent2);
+    border-radius: 0 8px 8px 0;
+    padding: 0.9rem 1rem;
+  }
+  .exp-text strong { color: var(--accent2); }
+  .nccn-ref {
+    margin-top: 0.6rem;
+    font-size: 0.78rem; color: var(--muted);
+    font-style: italic;
+  }
+
+  /* NAV */
+  .nav-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 1.5rem; gap: 1rem;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.7rem 1.6rem; border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; font-weight: 600;
+    border: none; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-next {
+    background: linear-gradient(135deg, var(--accent), #c0355e);
+    color: #fff;
+  }
+  .btn-next:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(232,67,147,0.35); }
+  .btn-next:disabled { opacity: 0.35; cursor: not-allowed; transform: none; box-shadow: none; }
+  .btn-prev {
+    background: var(--surface); color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-prev:hover { color: var(--text); border-color: var(--muted); }
+
+  /* RESULTS */
+  #results {
+    display: none;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 3rem 2rem;
+    text-align: center;
+    animation: fadeUp 0.5s ease both;
+  }
+  #results.show { display: block; }
+  .result-trophy { font-size: 4rem; margin-bottom: 1rem; }
+  .result-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem; font-weight: 900;
+    background: linear-gradient(135deg, var(--gold), var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+  }
+  .result-score {
+    font-size: 4rem; font-weight: 900;
+    background: linear-gradient(135deg, var(--correct), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1.1; margin: 1rem 0;
+  }
+  .result-sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 2rem; }
+  .stat-row {
+    display: flex; justify-content: center; gap: 2rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+  }
+  .stat-item { text-align: center; }
+  .stat-val { font-size: 1.6rem; font-weight: 800; }
+  .stat-val.g { color: var(--correct); }
+  .stat-val.r { color: var(--wrong); }
+  .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+  .btn-restart {
+    background: linear-gradient(135deg, var(--accent2), #0088aa);
+    color: #fff; margin-top: 1rem;
+    padding: 0.8rem 2.5rem; font-size: 1rem;
+  }
+  .btn-restart:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,212,255,0.3); }
+
+  /* CATEGORY FILTERS */
+  .cat-bar {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    position: relative; z-index: 10;
+    max-width: 800px; margin: 1rem auto 0;
+    padding: 0 1.5rem;
+  }
+  .cat-chip {
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;
+    padding: 0.3rem 0.85rem; border-radius: 100px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--muted); cursor: default;
+  }
+  .cat-chip.active { border-color: var(--accent2); color: var(--accent2); background: rgba(0,212,255,0.07); }
+
+  @media (max-width: 600px) {
+    header { padding: 1.5rem 1rem; }
+    .q-card { padding: 1.4rem; }
+    .q-num { font-size: 1.5rem; }
+    main { padding: 0 1rem 3rem; }
+    .stat-row { gap: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="glow-orb orb1"></div>
+<div class="glow-orb orb2"></div>
+
+<header>
+  <div class="badge">NCCN Guidelines v2024 · Evidence-Based</div>
+  <h1>Breast Cancer<br>Decision-Making Quiz</h1>
+  <p>50 high-yield clinical questions across all breast cancer subtypes</p>
+</header>
+
+<div id="progress-wrap">
+  <div class="progress-meta">
+    <span id="q-counter">Question 1 of 50</span>
+    <span class="score-badge" id="score-display">⭐ Score: 0 / 0</span>
+  </div>
+  <div class="progress-bar-bg">
+    <div class="progress-bar-fill" id="progress-fill" style="width:2%"></div>
+  </div>
+</div>
+
+<div class="cat-bar" id="cat-bar"></div>
+
+<main>
+  <div class="q-card" id="q-card">
+    <div class="q-meta">
+      <div class="q-num" id="q-num">01</div>
+      <div class="q-tag" id="q-tag">Staging</div>
+    </div>
+    <div class="q-text" id="q-text"></div>
+    <div class="options" id="options-wrap"></div>
+    <div class="explanation" id="explanation">
+      <div class="exp-header">
+        <div class="exp-icon" id="exp-icon"></div>
+        <span class="exp-label" id="exp-label"></span>
+      </div>
+      <div class="exp-text" id="exp-text"></div>
+      <div class="nccn-ref" id="nccn-ref"></div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-prev" id="btn-prev" onclick="navigate(-1)">← Prev</button>
+      <button class="btn btn-next" id="btn-next" onclick="navigate(1)" disabled>Next →</button>
+    </div>
+  </div>
+
+  <div id="results">
+    <div class="result-trophy">🏆</div>
+    <div class="result-title">Quiz Complete!</div>
+    <div class="result-score" id="r-score"></div>
+    <div class="result-sub" id="r-sub"></div>
+    <div class="stat-row">
+      <div class="stat-item"><div class="stat-val g" id="r-correct"></div><div class="stat-label">Correct</div></div>
+      <div class="stat-item"><div class="stat-val r" id="r-wrong"></div><div class="stat-label">Incorrect</div></div>
+      <div class="stat-item"><div class="stat-val" style="color:var(--muted)" id="r-skip"></div><div class="stat-label">Skipped</div></div>
+    </div>
+    <button class="btn btn-restart" onclick="restartQuiz()">🔄 Restart Quiz</button>
+  </div>
+</main>
+
+<script>
+const questions = [
+  // ── STAGING & PATHOLOGY ──────────────────────────────────────────────
+  {
+    cat: "Staging",
+    q: "A 45-year-old woman has a 2.2 cm invasive ductal carcinoma with 2 of 15 sentinel lymph nodes positive (macrometastases, no extranodal extension). Per AJCC 8th edition/NCCN, what is her pathological stage?",
+    opts: ["pT2 pN1a — Stage IIA", "pT2 pN1a — Stage IIB", "pT2 pN2a — Stage IIIA", "pT1c pN1a — Stage IIA"],
+    ans: 1,
+    exp: "<strong>pT2 pN1a = Stage IIB.</strong> T2 = tumor >2 cm and ≤5 cm. pN1a = 1–3 axillary LN macrometastases. Per AJCC 8th/NCCN, T2N1M0 = Stage IIB. Note: Anatomic stage can be further modified by biomarker (Prognostic Stage Group) but anatomic stage IIB applies here.",
+    ref: "NCCN BC v4.2024 – ST-1; AJCC 8th Edition Table 48.4"
+  },
+  {
+    cat: "Staging",
+    q: "Which of the following upgrades a clinical Stage IIA (T2N0) breast cancer to Prognostic Stage Group IA per NCCN?",
+    opts: ["ER+/PR+, HER2−, Ki67 <20%, Oncotype DX RS <11", "ER−/PR−, HER2+, Grade 3", "ER+/PR−, HER2−, Grade 2, Oncotype DX RS 26", "ER+/PR+, HER2+, Grade 1"],
+    ans: 0,
+    exp: "<strong>Low Oncotype DX RS (<11) in ER+/HER2− tumors downstages the prognostic group.</strong> NCCN adopts AJCC 8th edition Prognostic Stage Groups, which integrate ER, PR, HER2, and grade (± Oncotype RS for T1-2 N0). RS <11 with ER+/PR+/HER2− can reduce T2N0 from Anatomic IIA to Prognostic IA.",
+    ref: "NCCN BC v4.2024 – BINV-A; AJCC 8th Ed Table 48.8"
+  },
+  // ── DCIS ────────────────────────────────────────────────────────────
+  {
+    cat: "DCIS",
+    q: "A 55-year-old postmenopausal woman has ER-positive DCIS (grade 2, 1.5 cm), treated with breast-conserving surgery achieving clear margins. Per NCCN, what is the preferred adjuvant radiation recommendation?",
+    opts: ["No radiation needed regardless of grade", "Whole-breast irradiation (WBI) or accelerated partial breast irradiation (APBI) if eligible", "Mastectomy with immediate reconstruction", "Chemotherapy + radiation"],
+    ans: 1,
+    exp: "<strong>Post-lumpectomy WBI (or APBI if eligible) is recommended for DCIS after BCS.</strong> NCCN recommends RT after BCS for most DCIS patients to reduce local recurrence. APBI may be considered for low-risk DCIS (≥50 years, low-intermediate grade, ≤2.5 cm, margins ≥3 mm). Endocrine therapy (tamoxifen or AI) can be offered additionally for ER+ DCIS.",
+    ref: "NCCN BC v4.2024 – DCIS-3, DCIS-4"
+  },
+  {
+    cat: "DCIS",
+    q: "Which feature qualifies a DCIS patient as 'low-risk' for local recurrence under NCCN/ASTRO APBI criteria?",
+    opts: ["Age <45, ER−, high grade, margins 2 mm", "Age ≥50, ER+, low-intermediate grade, ≤2.5 cm, margins ≥3 mm", "Age ≥50, ER−, high grade, 3 cm", "Any DCIS if ER+"],
+    ans: 1,
+    exp: "<strong>ASTRO/NCCN APBI suitable criteria for DCIS:</strong> Age ≥50, screen-detected, unicentric, ≤2.5 cm, low-intermediate grade, ER+, clear margins ≥3 mm, no lymphovascular invasion. All criteria must be met for suitable classification.",
+    ref: "NCCN BC v4.2024 – DCIS-4; ASTRO APBI consensus 2017"
+  },
+  // ── EARLY STAGE / BCS ───────────────────────────────────────────────
+  {
+    cat: "Early Stage",
+    q: "Per NCCN, what is the minimum surgical margin required to be considered 'adequate' for invasive breast carcinoma after BCS?",
+    opts: ["1 mm", "No ink on tumor (no tumor at ink)", "2 mm", "5 mm"],
+    ans: 1,
+    exp: "<strong>'No ink on tumor' is the accepted adequate margin for invasive cancer.</strong> SSO-ASTRO-ASCO consensus (adopted by NCCN) defines a negative margin for invasive BC as no ink on tumor. Wider margins do not significantly reduce local recurrence risk with whole-breast RT. For DCIS, ≥2 mm is preferred.",
+    ref: "NCCN BC v4.2024 – BINV-4; SSO-ASTRO margin guideline 2014"
+  },
+  {
+    cat: "Early Stage",
+    q: "A 62-year-old woman has a 1.8 cm ER+/PR+/HER2− invasive ductal carcinoma (Luminal A, Grade 1) with clinically node-negative axilla. Sentinel lymph node biopsy reveals 1 SLN with a 0.3 mm micrometastasis. Per NCCN/Z0011 principles, what is the appropriate axillary management?",
+    opts: ["Complete axillary lymph node dissection (ALND)", "No further axillary surgery if proceeding with BCS + WBI", "Axillary radiation mandatory", "Mastectomy required"],
+    ans: 1,
+    exp: "<strong>Z0011 trial: No ALND needed for 1–2 positive SLNs in eligible patients.</strong> NCCN recommends omitting ALND for patients with T1-T2 tumors, 1–2 positive SLNs, undergoing BCS with planned WBI, and no gross extranodal extension. Micrometastases further support observation. ALND is not recommended in this scenario.",
+    ref: "NCCN BC v4.2024 – BINV-F; ACOSOG Z0011 trial"
+  },
+  {
+    cat: "Early Stage",
+    q: "An Oncotype DX Recurrence Score of 26 is returned for a postmenopausal patient with a 2 cm ER+/HER2− node-negative invasive breast cancer. Per NCCN (RxPONDER/TAILORx data), what is the recommendation?",
+    opts: ["Endocrine therapy alone", "Chemotherapy + endocrine therapy", "Neoadjuvant chemotherapy then surgery", "Clinical trial only"],
+    ans: 1,
+    exp: "<strong>RS 26 (intermediate-high risk, 26–100): TAILORx showed chemotherapy benefit in premenopausal and high RS patients.</strong> For postmenopausal women with RS 26-100 and node-negative disease, NCCN recommends chemotherapy + endocrine therapy. RS ≤25 in postmenopausal, node-negative = endocrine therapy alone (per TAILORx).",
+    ref: "NCCN BC v4.2024 – BINV-I; TAILORx NEJM 2018"
+  },
+  {
+    cat: "Early Stage",
+    q: "Which Oncotype DX RS threshold can be used to safely omit chemotherapy in node-POSITIVE (1–3 LN+) postmenopausal patients with ER+/HER2− breast cancer per NCCN?",
+    opts: ["RS ≤11", "RS ≤25", "RS ≤17", "No threshold — all node-positive patients need chemo"],
+    ans: 1,
+    exp: "<strong>RxPONDER: RS ≤25 in postmenopausal node-positive patients = no chemotherapy benefit.</strong> In the RxPONDER trial, postmenopausal women with 1–3 positive LNs and RS ≤25 had equivalent outcomes with endocrine therapy alone. Premenopausal women with RS ≤25 still benefit from chemotherapy (or ovarian suppression).",
+    ref: "NCCN BC v4.2024 – BINV-I; RxPONDER NEJM 2021"
+  },
+  // ── HER2+ ───────────────────────────────────────────────────────────
+  {
+    cat: "HER2+",
+    q: "A patient with stage IIA (T2N0) HER2-positive, ER-negative breast cancer is to receive neoadjuvant therapy. Per NCCN, which is the preferred regimen?",
+    opts: ["AC × 4 cycles alone", "Paclitaxel + trastuzumab + pertuzumab (THP) followed by AC (TCHP or AC→THP)", "Trastuzumab monotherapy", "CMF regimen"],
+    ans: 1,
+    exp: "<strong>NCCN preferred neoadjuvant regimen for HER2+ BC includes dual HER2 blockade (trastuzumab + pertuzumab) with chemotherapy.</strong> Options include TCHP (docetaxel/carboplatin/trastuzumab/pertuzumab) or AC→THP. Dual blockade (NeoSphere, TRYPHAENA trials) achieves higher pCR rates. The choice depends on cardiac risk and institutional preference.",
+    ref: "NCCN BC v4.2024 – BINV-K; NeoSphere, TRYPHAENA trials"
+  },
+  {
+    cat: "HER2+",
+    q: "A HER2-positive breast cancer patient underwent neoadjuvant chemotherapy + trastuzumab/pertuzumab. Surgery reveals residual invasive disease (non-pCR). Per NCCN/KATHERINE, what adjuvant therapy is recommended?",
+    opts: ["Continue trastuzumab + pertuzumab for 1 year", "Switch to ado-trastuzumab emtansine (T-DM1) × 14 cycles", "Add capecitabine", "No further HER2-targeted therapy"],
+    ans: 1,
+    exp: "<strong>T-DM1 (ado-trastuzumab emtansine) is NCCN preferred for residual disease after neoadjuvant HER2-directed therapy (KATHERINE trial).</strong> KATHERINE showed T-DM1 significantly improved iDFS vs. trastuzumab alone (50% reduction in invasive disease or death). 14 cycles (3-weekly) are recommended.",
+    ref: "NCCN BC v4.2024 – BINV-L; KATHERINE trial NEJM 2019"
+  },
+  {
+    cat: "HER2+",
+    q: "For a patient with pT1b (0.6 cm) HER2+/ER− node-negative breast cancer, per NCCN what is the recommended adjuvant chemotherapy + targeted therapy regimen?",
+    opts: ["Trastuzumab + pertuzumab × 1 year only", "Paclitaxel weekly × 12 + trastuzumab (APT regimen)", "TCHP × 6 cycles", "Observation — too small for treatment"],
+    ans: 1,
+    exp: "<strong>APT regimen (paclitaxel weekly × 12 + trastuzumab) is NCCN preferred for T1a-bN0 HER2+ BC.</strong> The TOLANEY APT study showed 7-year iDFS of 93% with this well-tolerated regimen. For ≤1 cm node-negative HER2+ tumors, APT is preferred over more intensive regimens to balance efficacy and toxicity.",
+    ref: "NCCN BC v4.2024 – BINV-K; APT trial Tolaney et al."
+  },
+  // ── TRIPLE NEGATIVE ─────────────────────────────────────────────────
+  {
+    cat: "TNBC",
+    q: "A 40-year-old woman with Stage II triple-negative breast cancer (TNBC) undergoes neoadjuvant chemotherapy (AC→paclitaxel). Surgery shows residual disease. Per NCCN (CREATE-X), what adjuvant therapy should be offered?",
+    opts: ["No additional systemic therapy", "Capecitabine × 8 cycles", "Olaparib if gBRCA+", "Radiation only"],
+    ans: 1,
+    exp: "<strong>Capecitabine adjuvant therapy for residual TNBC after neoadjuvant chemo (CREATE-X trial).</strong> CREATE-X demonstrated improved DFS and OS with capecitabine × 8 cycles (2500 mg/m²/day, days 1–14, q3w) for residual TNBC or HER2− disease. NCCN recommends this as standard adjuvant treatment for non-pCR TNBC.",
+    ref: "NCCN BC v4.2024 – BINV-M; CREATE-X NEJM 2017"
+  },
+  {
+    cat: "TNBC",
+    q: "A patient with high-risk, early-stage TNBC (T2N1) has received neoadjuvant AC→paclitaxel and achieves a pCR. She is gBRCA1 wild-type. Per NCCN, which is the recommended adjuvant immunotherapy?",
+    opts: ["Pembrolizumab × 9 cycles (KEYNOTE-522)", "Atezolizumab", "No immunotherapy; pCR means no further treatment needed", "Nivolumab"],
+    ans: 0,
+    exp: "<strong>Pembrolizumab (KEYNOTE-522) is NCCN recommended for high-risk TNBC regardless of pCR status.</strong> KEYNOTE-522 showed pembrolizumab + chemo neoadjuvant → adjuvant pembrolizumab improved pCR rates and EFS in Stage II-III TNBC. Adjuvant pembrolizumab is given for 9 cycles (3-weekly) post-surgery even after pCR.",
+    ref: "NCCN BC v4.2024 – BINV-M; KEYNOTE-522 NEJM 2022"
+  },
+  {
+    cat: "TNBC",
+    q: "A gBRCA2-positive patient has residual TNBC after neoadjuvant chemo + pembrolizumab. What adjuvant therapy sequence does NCCN recommend?",
+    opts: ["Capecitabine alone", "Olaparib × 1 year (after completing capecitabine if given) — OlympiA trial", "Pembrolizumab continuation only", "Observation"],
+    ans: 1,
+    exp: "<strong>OlympiA: Olaparib for 1 year in gBRCA+, HER2−, high-risk BC after adjuvant chemotherapy.</strong> OlympiA showed significantly improved IDFS and OS with adjuvant olaparib in gBRCA1/2-mutated HER2− BC (including TNBC). NCCN recommends olaparib after completing other adjuvant therapies (e.g., capecitabine), not concurrently.",
+    ref: "NCCN BC v4.2024 – BINV-M; OlympiA NEJM 2021"
+  },
+  // ── LOCALLY ADVANCED ────────────────────────────────────────────────
+  {
+    cat: "Locally Advanced",
+    q: "An inflammatory breast cancer (IBC) patient presents with T4d, N1, M0 (Stage IIIB). Per NCCN, what is the correct treatment sequence?",
+    opts: ["Surgery first, then chemotherapy", "Neoadjuvant systemic therapy → modified radical mastectomy → adjuvant radiation", "Radiation alone", "Endocrine therapy alone if ER+"],
+    ans: 1,
+    exp: "<strong>IBC is always treated with neoadjuvant systemic therapy first, then surgery (MRM), then PMRT.</strong> BCS is contraindicated in IBC. The sequence is: neoadjuvant chemotherapy (± HER2-directed or immunotherapy based on subtype) → MRM (SLN biopsy not appropriate in IBC) → post-mastectomy radiation therapy (PMRT) including regional nodes.",
+    ref: "NCCN BC v4.2024 – BINV-16, IBC section"
+  },
+  {
+    cat: "Locally Advanced",
+    q: "A patient has Stage IIIA (T2, N2) ER+/HER2− breast cancer. After neoadjuvant chemotherapy + surgery, she is found to have residual axillary disease. Per NCCN, PMRT indications include?",
+    opts: ["PMRT not needed if she achieved pCR in the primary tumor", "PMRT recommended for all patients with ≥4 positive LNs or T3-T4 tumors; consider for 1–3 positive LNs", "PMRT only if ER−", "PMRT only after ALND, not SLN biopsy"],
+    ans: 1,
+    exp: "<strong>PMRT is indicated for ≥4 positive LNs, T3-T4 tumors, or close/positive margins; strongly consider for 1–3 LN+.</strong> NCCN recommends PMRT after mastectomy for high-risk features. For 1–3 positive nodes, PMRT reduces locoregional recurrence, with meta-analyses (EBCTCG) showing OS benefit. Subtype does not alter PMRT indications.",
+    ref: "NCCN BC v4.2024 – BINV-J; EBCTCG Lancet 2014"
+  },
+  // ── ENDOCRINE THERAPY ───────────────────────────────────────────────
+  {
+    cat: "Endocrine Therapy",
+    q: "A 48-year-old premenopausal patient with high-risk ER+/HER2− BC (pT2N2, Grade 3) has completed chemotherapy. Per NCCN (SOFT/TEXT trials), what is the preferred endocrine therapy?",
+    opts: ["Tamoxifen × 5 years", "Ovarian suppression + exemestane or letrozole × 5 years", "Letrozole alone × 5 years", "No endocrine therapy if chemo was given"],
+    ans: 1,
+    exp: "<strong>OFS (ovarian function suppression) + AI is preferred for high-risk premenopausal patients (SOFT/TEXT trials).</strong> SOFT and TEXT trials showed that OFS + exemestane reduced BC recurrence more than tamoxifen in high-risk premenopausal patients. NCCN recommends OFS (GnRH agonist, oophorectomy, or ovarian irradiation) + AI for high-risk premenopausal ER+ BC.",
+    ref: "NCCN BC v4.2024 – BINV-I; SOFT/TEXT NEJM 2015, 2018"
+  },
+  {
+    cat: "Endocrine Therapy",
+    q: "For a postmenopausal ER+ node-negative patient who received 5 years of an aromatase inhibitor, per NCCN, what is the extended endocrine therapy recommendation?",
+    opts: ["Always stop at 5 years", "Extended therapy (up to 10 years total) considered for high-risk features (node-positive, high grade, or high genomic risk)", "Switch to tamoxifen mandatorily for 5 more years", "Add CDK4/6 inhibitor for 2 years"],
+    ans: 1,
+    exp: "<strong>Extended AI therapy (up to 10 years) is recommended by NCCN for high-risk ER+ BC.</strong> MA.17R and other trials support extended AI use. NCCN recommends extended therapy for patients with high-risk features (node-positive, large tumors, high grade). The benefit must be weighed against risks (osteoporosis, arthralgia). Low-risk patients may discontinue at 5 years.",
+    ref: "NCCN BC v4.2024 – BINV-I; MA.17R NEJM 2016"
+  },
+  {
+    cat: "Endocrine Therapy",
+    q: "A high-risk ER+/HER2− node-positive BC patient (Stage III) completing endocrine therapy is offered abemaciclib. Per NCCN (monarchE), what is the recommended duration and indication?",
+    opts: ["2 years of abemaciclib with endocrine therapy for high-risk ER+/HER2− patients", "6 months of abemaciclib", "5 years of abemaciclib alone", "Only for Stage IV disease"],
+    ans: 0,
+    exp: "<strong>monarchE: Abemaciclib × 2 years + endocrine therapy for high-risk ER+/HER2−, node-positive BC.</strong> monarchE demonstrated significant improvement in IDFS and distant relapse-free survival with abemaciclib + endocrine therapy for ≥4 LN+ or 1–3 LN+ with additional high-risk features (Grade 3, tumor ≥5 cm, or Ki67 ≥20%). NCCN includes this as a Category 1 recommendation.",
+    ref: "NCCN BC v4.2024 – BINV-I; monarchE NEJM 2022"
+  },
+  // ── METASTATIC ──────────────────────────────────────────────────────
+  {
+    cat: "Metastatic",
+    q: "A postmenopausal patient with newly diagnosed ER+/HER2− metastatic breast cancer has no prior endocrine therapy. Per NCCN, what is the preferred first-line regimen?",
+    opts: ["Chemotherapy (capecitabine)", "CDK4/6 inhibitor (palbociclib/ribociclib/abemaciclib) + AI (letrozole or anastrozole)", "Tamoxifen alone", "Fulvestrant monotherapy"],
+    ans: 1,
+    exp: "<strong>CDK4/6 inhibitor + aromatase inhibitor is NCCN Category 1 first-line for ER+/HER2− MBC.</strong> PALOMA-2, MONALEESA-2, MONARCH-3 all showed superior PFS with CDK4/6i + AI vs AI alone. Ribociclib + letrozole also showed OS benefit (MONALEESA-2). NCCN recommends CDK4/6i + AI as preferred first-line for ER+/HER2− MBC.",
+    ref: "NCCN BC v4.2024 – BINV-P; PALOMA-2, MONALEESA-2, MONARCH-3"
+  },
+  {
+    cat: "Metastatic",
+    q: "A patient with ER+/HER2−/PIK3CA-mutated MBC progresses on first-line CDK4/6i + AI. Per NCCN, what is the preferred next-line therapy?",
+    opts: ["Fulvestrant alone", "Alpelisib + fulvestrant (SOLAR-1 trial)", "Everolimus + exemestane", "Chemotherapy immediately"],
+    ans: 1,
+    exp: "<strong>Alpelisib (PI3K inhibitor) + fulvestrant for PIK3CA-mutated ER+/HER2− MBC (SOLAR-1).</strong> NCCN recommends testing for PIK3CA mutation (ctDNA or tissue). Alpelisib + fulvestrant showed significantly improved PFS in PIK3CA-mutated patients post-CDK4/6i. Key toxicities: hyperglycemia, rash — require monitoring.",
+    ref: "NCCN BC v4.2024 – BINV-P; SOLAR-1 NEJM 2019"
+  },
+  {
+    cat: "Metastatic",
+    q: "A patient with ER+/HER2−/ESR1-mutated MBC (on ctDNA) has progressed on AI + CDK4/6i. Per NCCN, what targeted therapy is specifically indicated?",
+    opts: ["Alpelisib + fulvestrant", "Elacestrant (oral SERD — EMERALD trial)", "Everolimus + exemestane", "Olaparib"],
+    ans: 1,
+    exp: "<strong>Elacestrant (oral SERD) for ESR1-mutated ER+/HER2− MBC post-CDK4/6i (EMERALD trial).</strong> EMERALD showed elacestrant significantly improved PFS vs standard endocrine therapy in ESR1-mutated MBC previously treated with CDK4/6i. NCCN includes elacestrant as a preferred option in this setting. ESR1 mutation testing via ctDNA is recommended.",
+    ref: "NCCN BC v4.2024 – BINV-P; EMERALD NEJM 2022"
+  },
+  {
+    cat: "Metastatic",
+    q: "First-line therapy for HER2-positive metastatic breast cancer per NCCN is?",
+    opts: ["Trastuzumab + paclitaxel", "Pertuzumab + trastuzumab + taxane (CLEOPATRA regimen)", "T-DM1", "Lapatinib + capecitabine"],
+    ans: 1,
+    exp: "<strong>CLEOPATRA regimen (pertuzumab + trastuzumab + docetaxel/paclitaxel) is NCCN Category 1 first-line for HER2+ MBC.</strong> CLEOPATRA showed OS benefit of >16 months with the addition of pertuzumab to trastuzumab + docetaxel. This remains the standard of care. Pertuzumab can be continued as maintenance with trastuzumab after chemotherapy discontinuation.",
+    ref: "NCCN BC v4.2024 – BINV-R; CLEOPATRA NEJM 2012"
+  },
+  {
+    cat: "Metastatic",
+    q: "A patient with HER2+ MBC progresses after CLEOPATRA-based therapy. Per NCCN, what is the preferred second-line agent?",
+    opts: ["Lapatinib + capecitabine", "Trastuzumab deruxtecan (T-DXd / DS-8201) — DESTINY-Breast03", "T-DM1", "Neratinib"],
+    ans: 1,
+    exp: "<strong>Trastuzumab deruxtecan (T-DXd) is NCCN preferred second-line for HER2+ MBC (DESTINY-Breast03).</strong> DESTINY-Breast03 showed T-DXd vastly superior PFS and OS vs T-DM1 in second-line HER2+ MBC. T-DXd is now Category 1 preferred. Key toxicity: interstitial lung disease (ILD) — requires active monitoring.",
+    ref: "NCCN BC v4.2024 – BINV-R; DESTINY-Breast03 NEJM 2022"
+  },
+  {
+    cat: "Metastatic",
+    q: "A TNBC patient with PD-L1-positive (CPS ≥10) first-line metastatic disease. Per NCCN, what is the preferred regimen?",
+    opts: ["Nab-paclitaxel alone", "Pembrolizumab + chemotherapy (nab-paclitaxel or paclitaxel or gemcitabine/carboplatin) — KEYNOTE-522/355", "Atezolizumab + nab-paclitaxel", "Carboplatin alone"],
+    ans: 1,
+    exp: "<strong>Pembrolizumab + chemotherapy for PD-L1+ (CPS ≥10) first-line TNBC MBC (KEYNOTE-355).</strong> KEYNOTE-355 showed pembrolizumab + chemo improved PFS and OS in PD-L1 CPS ≥10 TNBC. Atezolizumab + nab-paclitaxel (IMpassion130) was withdrawn after IMpassion131 failed to confirm benefit. NCCN now recommends pembrolizumab-based therapy.",
+    ref: "NCCN BC v4.2024 – BINV-T; KEYNOTE-355 NEJM 2022"
+  },
+  {
+    cat: "Metastatic",
+    q: "A gBRCA1-mutated HER2−/ER− MBC patient has received prior platinum-containing chemotherapy. Per NCCN, what PARP inhibitor is recommended?",
+    opts: ["Olaparib or talazoparib (OlympiAD/EMBRACA trials)", "Niraparib", "Rucaparib", "Veliparib"],
+    ans: 0,
+    exp: "<strong>Olaparib (OlympiAD) and talazoparib (EMBRACA) are NCCN-approved PARP inhibitors for gBRCA+, HER2− MBC.</strong> Both trials showed superior PFS vs standard chemotherapy in gBRCA1/2-mutated HER2− MBC. Olaparib also showed OS benefit in the OlympiAD trial. Testing for gBRCA mutation is recommended for all MBC patients.",
+    ref: "NCCN BC v4.2024 – BINV-T; OlympiAD NEJM 2017; EMBRACA NEJM 2018"
+  },
+  {
+    cat: "Metastatic",
+    q: "Sacituzumab govitecan (SG) is NCCN-recommended for which metastatic breast cancer subtype and setting?",
+    opts: ["First-line HER2+ MBC", "Previously treated (≥2 lines) metastatic TNBC (ASCENT trial) and HER2-low ER+ MBC", "ER+ MBC after CDK4/6i failure", "IBC only"],
+    ans: 1,
+    exp: "<strong>SG (Trodelvy) for ≥2 prior lines of metastatic TNBC (ASCENT) and HER2-low ER+ post-chemo MBC.</strong> ASCENT showed superior OS and PFS vs chemotherapy in pre-treated TNBC. TROPiCS-02 showed SG improved PFS/OS in HER2-low ER+ MBC post-CDK4/6i + ≥1 chemotherapy. TROP-2 expression testing is not required per current NCCN.",
+    ref: "NCCN BC v4.2024 – BINV-T; ASCENT NEJM 2021; TROPiCS-02 Lancet 2023"
+  },
+  // ── HER2-LOW ───────────────────────────────────────────────────────
+  {
+    cat: "HER2-low",
+    q: "A patient has HER2-low (IHC 1+) ER+/HER2-negative MBC that has progressed on CDK4/6i + endocrine therapy and 1–2 lines of chemotherapy. Per NCCN (DESTINY-Breast04), what therapy should be offered?",
+    opts: ["Standard trastuzumab-based therapy", "Trastuzumab deruxtecan (T-DXd) — DESTINY-Breast04", "Pertuzumab + trastuzumab", "No HER2-directed therapy is applicable"],
+    ans: 1,
+    exp: "<strong>T-DXd for HER2-low (IHC 1+ or 2+/ISH−) ER+ or TNBC MBC in ≥2 prior lines (DESTINY-Breast04).</strong> DESTINY-Breast04 redefined 'HER2-low' as a targetable category. T-DXd significantly improved PFS and OS vs chemotherapy in HER2-low MBC. NCCN includes T-DXd as a recommended option for HER2-low MBC.",
+    ref: "NCCN BC v4.2024 – BINV-R; DESTINY-Breast04 NEJM 2022"
+  },
+  // ── BONE METASTASIS ─────────────────────────────────────────────────
+  {
+    cat: "Metastatic",
+    q: "A patient with MBC develops bone metastases confirmed on imaging. Per NCCN, what bone-modifying agent should be added to systemic therapy?",
+    opts: ["Bisphosphonate or denosumab every 4 weeks (or every 12 weeks after initial phase)", "Calcium supplementation only", "Radiation alone", "Surgical fixation as first-line"],
+    ans: 0,
+    exp: "<strong>Bone-modifying agents (zoledronic acid, pamidronate, or denosumab) reduce skeletal-related events in MBC with bone mets.</strong> NCCN recommends initiating a bone-modifying agent for all MBC patients with bone involvement. Dosing can be de-escalated to q12w after initial period (OPTIMIZE-2 data). Dental evaluation before starting is essential (osteonecrosis of jaw risk).",
+    ref: "NCCN BC v4.2024 – BINV-U; OPTIMIZE-2 Lancet Oncol 2015"
+  },
+  // ── GERMLINE / HEREDITARY ───────────────────────────────────────────
+  {
+    cat: "Genetics",
+    q: "Per NCCN, germline genetic testing (BRCA1/2 and beyond) is recommended for breast cancer patients who meet which criteria?",
+    opts: ["All breast cancer patients regardless of age or family history", "Patients meeting specific criteria: age ≤45, TNBC ≤60, Ashkenazi Jewish heritage, family history, male BC, or personal/family history of ovarian cancer", "Only TNBC patients", "Patients >70 years only"],
+    ans: 1,
+    exp: "<strong>NCCN recommends germline testing for patients meeting risk criteria including age ≤45 at diagnosis, TNBC ≤60, Ashkenazi Jewish ancestry, male BC, personal/family history of ovarian cancer, ≥1 first/second-degree relative with BC ≤50, or ≥2 relatives with BC/ovarian cancer.</strong> Panel testing (BRCA1/2 + PALB2, CHEK2, ATM, etc.) is now standard.",
+    ref: "NCCN BC v4.2024 – BINV-B; NCCN Genetic/Familial High-Risk Guidelines"
+  },
+  {
+    cat: "Genetics",
+    q: "A 38-year-old BRCA1-mutation carrier has been diagnosed with TNBC. She is considering contralateral prophylactic mastectomy (CPM). Per NCCN, what is the recommendation?",
+    opts: ["CPM is contraindicated in BRCA1 carriers", "CPM is an option and should be discussed; risk reduction of contralateral BC is significant in BRCA1/2 carriers", "CPM mandatory", "CPM only after age 50"],
+    ans: 1,
+    exp: "<strong>NCCN supports discussion of CPM in BRCA1/2 carriers given the high lifetime risk of contralateral breast cancer (up to 40–60%).</strong> While not mandated, CPM significantly reduces contralateral BC risk. Risk-benefit discussion including reconstruction options, menopausal implications, and psychological factors should be undertaken in a multidisciplinary setting.",
+    ref: "NCCN BC v4.2024 – BINV-B; NCCN Genetic/Familial High-Risk Guidelines v3.2024"
+  },
+  // ── RADIATION ───────────────────────────────────────────────────────
+  {
+    cat: "Radiation",
+    q: "A 70-year-old woman with Stage I (T1N0), ER+, Grade 1, HER2−, Luminal A BC undergoes BCS. Per NCCN (CALGB 9343 / PRIME II), can radiation be omitted?",
+    opts: ["No — radiation is always mandatory after BCS", "Yes — radiation can be omitted in ≥70 years, T1N0, ER+, planned endocrine therapy; accept increased LRR but no OS difference", "Only if she refuses chemotherapy", "Radiation replaced by extended endocrine therapy"],
+    ans: 1,
+    exp: "<strong>NCCN: Radiation omission acceptable in ≥70 years, T1N0, ER+, with planned endocrine therapy (CALGB 9343, PRIME II).</strong> Both trials showed no OS difference between WBI and no RT in this population (LRR increased ~10% without RT). Omission is a Category 1 option in this setting. Patient preference and life expectancy are key factors.",
+    ref: "NCCN BC v4.2024 – BINV-G; CALGB 9343 NEJM 2004; PRIME II Lancet Oncol 2015"
+  },
+  {
+    cat: "Radiation",
+    q: "A patient undergoes mastectomy for T3N1 ER+/HER2− BC. She has 2 positive axillary LNs and clear margins. Per NCCN, is PMRT recommended?",
+    opts: ["No — 1–3 positive LNs with clear margins = no PMRT", "Yes — PMRT is recommended for 1–3 positive LNs, especially T3 tumors (Category 2A/1)", "PMRT only if ER−", "PMRT only after neoadjuvant chemotherapy"],
+    ans: 1,
+    exp: "<strong>PMRT recommended for T3-T4 tumors and ≥1 positive LNs; strongly considered for 1–3 LN+ (NCCN Category 1 for ≥4 LN+, Category 2A for 1–3 LN+).</strong> EBCTCG meta-analysis showed PMRT reduces locoregional recurrence and improves OS for node-positive patients. T3 tumors are an additional indication. Regional nodal irradiation should include IMN, supraclavicular, and axilla.",
+    ref: "NCCN BC v4.2024 – BINV-J; EBCTCG Lancet 2014"
+  },
+  // ── SURGICAL DECISIONS ──────────────────────────────────────────────
+  {
+    cat: "Surgery",
+    q: "Per NCCN, which of the following is an absolute contraindication to breast-conserving surgery (BCS)?",
+    opts: ["Tumor size 3 cm in a large breast", "Diffuse microcalcifications on mammography suggesting extensive disease", "Patient age <35", "Single positive sentinel lymph node"],
+    ans: 1,
+    exp: "<strong>Diffuse malignant-appearing microcalcifications are an absolute contraindication to BCS per NCCN.</strong> Absolute contraindications include: multicentric disease (two or more primary tumors in different quadrants), diffuse malignant microcalcifications, positive margins that cannot be achieved with acceptable cosmesis, prior breast radiation, and pregnancy (first or second trimester where RT would be required during pregnancy). Patient age and LN status alone are not contraindications.",
+    ref: "NCCN BC v4.2024 – BINV-4"
+  },
+  {
+    cat: "Surgery",
+    q: "A clinically T3N0 ER+/HER2− breast cancer patient desires BCS. Per NCCN, what neoadjuvant approach can be used to enable BCS?",
+    opts: ["Neoadjuvant endocrine therapy or chemotherapy to downstage the tumor", "ALND must be done first", "BCS never possible for T3 tumors", "Radiation first then surgery"],
+    ans: 0,
+    exp: "<strong>Neoadjuvant systemic therapy (chemotherapy or endocrine therapy for ER+ tumors) can downstage locally advanced BC to enable BCS.</strong> NCCN supports neoadjuvant endocrine therapy for postmenopausal ER+/HER2− patients (especially Luminal A) as an alternative to chemotherapy for downstaging. Response rates are 50–70%, and pCR (though rare) or sufficient downstaging can enable BCS.",
+    ref: "NCCN BC v4.2024 – BINV-11, BINV-12"
+  },
+  // ── SIDE EFFECTS / SUPPORTIVE ───────────────────────────────────────
+  {
+    cat: "Supportive",
+    q: "A postmenopausal BC patient on an aromatase inhibitor develops significant joint pain and stiffness (AI-associated arthralgia). Per NCCN/evidence, which intervention has the strongest evidence?",
+    opts: ["Switch to a different AI", "Acupuncture, exercise, or switch to tamoxifen; duloxetine or omega-3 may help", "Immediate opioid therapy", "Discontinue endocrine therapy permanently"],
+    ans: 1,
+    exp: "<strong>NCCN recommends exercise, acupuncture, duloxetine, omega-3 fatty acids, or switching AI as management for AI-associated arthralgia.</strong> The S0230 trial supports duloxetine. Switching to a different AI helps ~50% of patients. Tamoxifen is an option if AI toxicity is intolerable. Permanent discontinuation should be avoided given the clear benefit of endocrine therapy.",
+    ref: "NCCN BC v4.2024 – Survivorship; S0230 JNCI 2012"
+  },
+  // ── MALE BC ─────────────────────────────────────────────────────────
+  {
+    cat: "Special Populations",
+    q: "Male breast cancer is predominantly of which subtype, and what is the preferred adjuvant endocrine therapy per NCCN?",
+    opts: ["TNBC; chemotherapy only", "ER+ (>90% of cases); tamoxifen × 5–10 years (AI less effective due to lack of ovarian suppression)", "HER2+; trastuzumab only", "ER+; aromatase inhibitor alone preferred"],
+    ans: 1,
+    exp: "<strong>Male BC is >90% ER+; tamoxifen is the preferred adjuvant endocrine therapy.</strong> AIs are less effective in men without concomitant GnRH agonist because men have peripheral aromatization but higher levels of androgens. NCCN recommends tamoxifen × 5–10 years. If AI is used, GnRH agonist should be combined. BRCA2 mutation is the most common hereditary risk factor in male BC.",
+    ref: "NCCN BC v4.2024 – Male BC section; Cardoso et al. Ann Oncol 2018"
+  },
+  // ── PREGNANCY-ASSOC ──────────────────────────────────────────────────
+  {
+    cat: "Special Populations",
+    q: "A pregnant woman (18 weeks gestation) is diagnosed with ER−/HER2− (TNBC) Stage II breast cancer. Per NCCN, can chemotherapy be administered?",
+    opts: ["No chemotherapy ever during pregnancy", "Chemotherapy (AC-based) can be given after first trimester (≥14 weeks); trastuzumab/radiation contraindicated in pregnancy", "Radiation first, then surgery", "Wait until delivery for all treatment"],
+    ans: 1,
+    exp: "<strong>Chemotherapy (AC regimen) is safe after the first trimester (≥14 weeks) in pregnancy-associated BC.</strong> NCCN supports chemotherapy after the first trimester. Trastuzumab, pertuzumab, and radiation are contraindicated during pregnancy. Endocrine therapy and targeted agents are also withheld. Surgery can be performed at any trimester. Neonatal/obstetric co-management is essential.",
+    ref: "NCCN BC v4.2024 – Pregnancy-Associated BC section"
+  },
+  // ── LOBULAR / SPECIAL ────────────────────────────────────────────────
+  {
+    cat: "Special Populations",
+    q: "Lobular carcinoma in situ (LCIS — classic type) is discovered incidentally on core needle biopsy. Per NCCN, what is the recommended management?",
+    opts: ["Mastectomy for all patients", "Excision to clear margins, then risk reduction counseling ± chemoprevention (tamoxifen or raloxifene)", "Observation with surveillance only (no excision required for LCIS at biopsy)", "Sentinel lymph node biopsy + radiation"],
+    ans: 1,
+    exp: "<strong>Classic LCIS on core biopsy: Excision recommended by NCCN to exclude co-existent invasive cancer or DCIS.</strong> After excision, close surveillance is adequate. NCCN also recommends risk reduction counseling and consideration of chemoprevention (tamoxifen 20 mg/day × 5 yrs or raloxifene for postmenopausal). Pleomorphic LCIS is treated more aggressively (margins + consider RT).",
+    ref: "NCCN BC v4.2024 – LCIS-1, LCIS-2"
+  },
+  // ── BIOMARKER TESTING ────────────────────────────────────────────────
+  {
+    cat: "Biomarkers",
+    q: "Per NCCN, which biomarker tests are recommended as standard for all newly diagnosed invasive breast cancers?",
+    opts: ["CEA and CA 15-3 only", "ER, PR, HER2 (IHC ± FISH), Ki67, and tumor grade on all invasive cancers", "PD-L1 and BRCA on all patients", "FISH for HER2 alone"],
+    ans: 1,
+    exp: "<strong>NCCN mandates ER, PR, HER2, and grade for all invasive BC; Ki67 is useful for Luminal subtype classification.</strong> HER2 testing: IHC 3+ = positive; IHC 2+ → reflex ISH. IHC 0/1+ = HER2-negative but IHC 1+ or IHC 2+/ISH− = HER2-low (relevant for T-DXd eligibility). PD-L1 testing is recommended for TNBC. BRCA testing is recommended based on risk criteria.",
+    ref: "NCCN BC v4.2024 – BINV-A; ASCO/CAP HER2 guideline 2023"
+  },
+  {
+    cat: "Biomarkers",
+    q: "HER2 IHC 2+ result is returned for a newly diagnosed invasive BC. Per NCCN/ASCO-CAP, what is the next step?",
+    opts: ["Report as HER2 positive and start trastuzumab", "Reflex ISH (FISH/CISH/SISH) to determine HER2 amplification status", "Repeat IHC on same block", "No further testing needed"],
+    ans: 1,
+    exp: "<strong>HER2 IHC 2+ is equivocal and requires reflex ISH (in situ hybridization) per ASCO/CAP guidelines (adopted by NCCN).</strong> ISH ratio HER2/CEP17 ≥2.0 OR average HER2 signals/cell ≥6.0 = HER2 positive. Five distinct ISH groups exist in the updated 2018/2023 ASCO/CAP guidelines. IHC 3+ is directly positive; IHC 0/1+ is negative. ISH results guide targeted therapy decisions.",
+    ref: "NCCN BC v4.2024 – BINV-A; ASCO/CAP 2023 HER2 guidelines"
+  },
+  {
+    cat: "Biomarkers",
+    q: "Tumor mutational burden (TMB-H) is detected in a heavily pre-treated metastatic BC patient. Per NCCN, which immune checkpoint inhibitor may be considered?",
+    opts: ["Atezolizumab", "Pembrolizumab (TMB-H ≥10 mut/Mb — KEYNOTE-158)", "Nivolumab", "Ipilimumab alone"],
+    ans: 1,
+    exp: "<strong>Pembrolizumab is FDA-approved and NCCN-recommended for TMB-high (≥10 mutations/megabase) solid tumors including BC (KEYNOTE-158).</strong> This is a tissue/tumor-agnostic approval. Testing via validated NGS panels is required. MSI-H/dMMR tumors also qualify for pembrolizumab regardless of BC subtype.",
+    ref: "NCCN BC v4.2024 – BINV-V; KEYNOTE-158 J Clin Oncol 2020"
+  },
+  // ── SCREENING & SURVEILLANCE ─────────────────────────────────────────
+  {
+    cat: "Surveillance",
+    q: "Per NCCN, what is the recommended surveillance for a patient who has completed treatment for early-stage BC?",
+    opts: ["Monthly self-breast exam only", "History and physical every 3–6 months × 3 years, then every 6–12 months × 2 years, then annually; annual ipsilateral (if BCS) and contralateral mammogram", "CT chest/abdomen/pelvis annually", "PET scan every 6 months"],
+    ans: 1,
+    exp: "<strong>NCCN follow-up: H&P every 3–6 months × 3 years → 6–12 monthly × 2 years → annually; annual mammogram.</strong> Routine blood tests (CBC, LFTs, tumor markers) and imaging (CT, PET, bone scan) are NOT recommended for asymptomatic surveillance — evidence does not support improved outcomes. DEXA scan recommended for patients on AIs.",
+    ref: "NCCN BC v4.2024 – BINV-W (Follow-up)"
+  },
+  {
+    cat: "Surveillance",
+    q: "A BRCA1 carrier without breast cancer asks about screening recommendations. Per NCCN, what is appropriate?",
+    opts: ["Routine mammogram starting age 40 as per general population", "Annual mammogram AND annual breast MRI starting at age 25–30 (or 10 years before earliest affected family member)", "MRI only, no mammogram", "Prophylactic mastectomy mandatory before screening"],
+    ans: 1,
+    exp: "<strong>NCCN recommends annual mammogram + annual breast MRI for BRCA1/2 carriers, starting at age 25–30.</strong> High-risk surveillance (lifetime risk >20%) includes alternating mammogram and MRI every 6 months (or both annually). NCCN Genetic/Familial guidelines also recommend risk-reduction counseling (CPM, RRSO) and discussions about chemoprevention.",
+    ref: "NCCN Genetic/Familial High-Risk v3.2024; NCCN BC v4.2024 – BINV-B"
+  },
+  // ── NEOADJUVANT pCR ──────────────────────────────────────────────────
+  {
+    cat: "Neoadjuvant",
+    q: "After neoadjuvant chemotherapy, pCR (ypT0/is ypN0) is achieved in a HER2+/ER− patient. Per NCCN, what adjuvant HER2-directed therapy is recommended?",
+    opts: ["No further HER2-targeted therapy", "Complete 1 year of trastuzumab + pertuzumab (dual blockade) as adjuvant therapy", "Switch to T-DM1", "Neratinib for 1 year"],
+    ans: 1,
+    exp: "<strong>After pCR in HER2+ BC: complete 1 year of trastuzumab + pertuzumab adjuvant therapy (from start of neoadjuvant).</strong> NCCN recommends completing dual HER2 blockade (trastuzumab + pertuzumab) for 1 year total when pCR is achieved. T-DM1 (KATHERINE) is only for residual disease. Neratinib may be added for high-risk ER+ HER2+ patients after completing trastuzumab (ExteNET).",
+    ref: "NCCN BC v4.2024 – BINV-L; APHINITY trial NEJM 2017"
+  },
+  {
+    cat: "Neoadjuvant",
+    q: "Per NCCN, which neoadjuvant systemic therapy option is appropriate for postmenopausal ER+/HER2− patients with Stage II-III BC who are not candidates for chemotherapy?",
+    opts: ["No neoadjuvant therapy", "Neoadjuvant aromatase inhibitor (letrozole or anastrozole) for ≥4–6 months as downstaging strategy", "Neoadjuvant tamoxifen + AI combination", "Fulvestrant neoadjuvant"],
+    ans: 1,
+    exp: "<strong>Neoadjuvant AI (letrozole/anastrozole) × 4–6+ months is NCCN-recommended for postmenopausal ER+/HER2− patients to achieve tumor downstaging.</strong> Clinical response rates ~50–70%. This approach is particularly useful for Luminal A tumors (low Ki67, Grade 1-2) where chemotherapy benefit is minimal. Ki67 and endocrine response guide subsequent management.",
+    ref: "NCCN BC v4.2024 – BINV-11; P024 trial; ACOSOG Z1031"
+  },
+  // ── CDK4/6 INHIBITORS TOXICITY ───────────────────────────────────────
+  {
+    cat: "Metastatic",
+    q: "A patient on palbociclib + letrozole develops Grade 3 neutropenia (ANC <1000/µL). Per NCCN/prescribing guidelines, what is the recommended management?",
+    opts: ["Discontinue palbociclib permanently", "Hold palbociclib until ANC recovery to ≥1000/µL, then resume at reduced dose; no G-CSF prophylaxis recommended", "Start G-CSF and continue at same dose", "Switch to ribociclib"],
+    ans: 1,
+    exp: "<strong>Grade 3 neutropenia with CDK4/6 inhibitors: hold until ANC ≥1000/µL, resume at reduced dose; G-CSF not routinely recommended.</strong> Palbociclib/ribociclib/abemaciclib commonly cause neutropenia (CDK4/6i mechanism). NCCN and package inserts recommend dose reduction (125→100→75 mg) rather than G-CSF. Febrile neutropenia is uncommon despite ANC drop.",
+    ref: "NCCN BC v4.2024 – BINV-P; palbociclib prescribing information"
+  },
+  // ── CNS METASTASIS ────────────────────────────────────────────────────
+  {
+    cat: "Metastatic",
+    q: "A patient with HER2+ MBC develops limited brain metastases (1–4 lesions). Per NCCN, what is the preferred local treatment?",
+    opts: ["Whole-brain radiation therapy (WBRT) alone", "Stereotactic radiosurgery (SRS) preferred for limited lesions (1–4); WBRT reserved for more diffuse disease", "No treatment; continue systemic therapy only", "Immediate surgical resection of all lesions"],
+    ans: 1,
+    exp: "<strong>SRS is preferred over WBRT for limited brain metastases (1–4) per NCCN, given lower neurocognitive toxicity.</strong> WBRT is reserved for extensive/diffuse brain metastases or leptomeningeal disease. Systemic therapy (tucatinib + capecitabine + trastuzumab; HER2CLIMB) has demonstrated CNS activity and should be continued. Neurosurgery is considered for large/symptomatic single lesions.",
+    ref: "NCCN BC v4.2024 – BINV-U; HER2CLIMB NEJM 2020"
+  },
+  {
+    cat: "Metastatic",
+    q: "For HER2+ MBC with active brain metastases that has progressed on trastuzumab + pertuzumab, per NCCN, which regimen has demonstrated CNS efficacy?",
+    opts: ["T-DM1", "Tucatinib + trastuzumab + capecitabine (HER2CLIMB trial)", "Lapatinib alone", "Neratinib + capecitabine"],
+    ans: 1,
+    exp: "<strong>HER2CLIMB: Tucatinib + trastuzumab + capecitabine showed significant CNS PFS benefit in HER2+ MBC with brain metastases.</strong> Tucatinib is a highly selective HER2 TKI that crosses the blood-brain barrier. HER2CLIMB showed OS benefit including the brain metastases subgroup. NCCN lists this as a Category 1 preferred regimen for HER2+ MBC with CNS disease.",
+    ref: "NCCN BC v4.2024 – BINV-R; HER2CLIMB NEJM 2020"
+  },
+  // ── LEPTOMENINGEAL ────────────────────────────────────────────────────
+  {
+    cat: "Metastatic",
+    q: "A patient with HER2+ MBC develops leptomeningeal disease (confirmed on MRI + CSF cytology). Per NCCN, what systemic therapy has shown activity?",
+    opts: ["WBRT alone", "Intrathecal trastuzumab or neratinib; systemic HER2-directed therapy with CNS-penetrant agents (tucatinib)", "No systemic therapy; palliative care only", "WBRT + capecitabine"],
+    ans: 1,
+    exp: "<strong>CNS-penetrant systemic therapy (tucatinib-based regimens) and intrathecal trastuzumab are used for HER2+ LMD per NCCN.</strong> Leptomeningeal disease carries poor prognosis. NCCN recommends continuing systemic HER2-directed therapy with agents with CNS penetration. Intrathecal trastuzumab and intrathecal chemotherapy (MTX, thiotepa) may provide palliative benefit.",
+    ref: "NCCN BC v4.2024 – BINV-U"
+  },
+  // ── CHEMOPREVENTION ──────────────────────────────────────────────────
+  {
+    cat: "Risk Reduction",
+    q: "A 50-year-old woman with a 5-year Gail model risk of 1.8% (above average) and atypical ductal hyperplasia on biopsy asks about chemoprevention. Per NCCN, which agents are approved for risk reduction?",
+    opts: ["Metformin", "Tamoxifen (20 mg/day × 5 years) or raloxifene (postmenopausal) or AI (exemestane/anastrozole for postmenopausal)", "Aspirin alone", "Omega-3 fatty acids"],
+    ans: 1,
+    exp: "<strong>NCCN recommends chemoprevention discussion for high-risk women (≥1.7% 5-year Gail risk or other high-risk features): tamoxifen, raloxifene (postmenopausal), or AI (exemestane/anastrozole).</strong> MAP.3 trial supports exemestane; IBIS-II supports anastrozole. Tamoxifen/raloxifene approved by FDA. ADH significantly elevates risk and is a key indication for chemoprevention counseling.",
+    ref: "NCCN BC Risk Reduction v2.2024; NSABP P-1, P-2, MAP.3"
+  },
+  // ── SPINAL CORD COMPRESSION ──────────────────────────────────────────
+  {
+    cat: "Metastatic",
+    q: "A patient with MBC develops sudden back pain with leg weakness and bowel/bladder dysfunction. MRI confirms epidural spinal cord compression. Per NCCN, what is the urgent management?",
+    opts: ["Begin systemic chemotherapy immediately", "High-dose IV dexamethasone + urgent neurosurgical/radiation oncology consultation; surgical decompression if appropriate", "Observation with MRI in 1 week", "Bone-modifying agents only"],
+    ans: 1,
+    exp: "<strong>Spinal cord compression is a oncologic emergency: IV dexamethasone + urgent neurosurgical/radiation evaluation.</strong> NCCN recommends immediate high-dose steroids (dexamethasone 8–16 mg IV loading dose) to reduce edema. Surgical decompression + RT is superior to RT alone for selected patients (PATCHELL trial). Timing is critical — neurological deficits can be irreversible if treatment is delayed >24–48 hours.",
+    ref: "NCCN BC v4.2024 – Oncologic Emergencies; PATCHELL NEJM 2005"
+  },
+  // ── MISC HIGH-YIELD ──────────────────────────────────────────────────
+  {
+    cat: "Neoadjuvant",
+    q: "Per NCCN, what is the recommended timing for sentinel lymph node biopsy (SLNB) in patients receiving neoadjuvant chemotherapy for clinically node-negative breast cancer?",
+    opts: ["Always before neoadjuvant chemotherapy", "SLNB can be performed before OR after neoadjuvant chemotherapy for clinically node-negative patients", "Only after completion of chemotherapy", "SLNB not recommended with neoadjuvant chemotherapy"],
+    ans: 1,
+    exp: "<strong>For cN0 patients, SLNB can be done pre- or post-neoadjuvant chemotherapy per NCCN.</strong> Post-neoadjuvant SLNB is increasingly preferred to assess pathological nodal response. For initially node-positive (cN1) patients converted to cN0 after chemo, targeted axillary dissection (TAD = SLNB + clipped node removal) reduces false-negative rates to <5% (ACOSOG Z1071, SENTINA data).",
+    ref: "NCCN BC v4.2024 – BINV-11; Z1071, SENTINA trials"
+  },
+  {
+    cat: "Biomarkers",
+    q: "Germline PALB2 mutation is found in a patient with high-risk ER+/HER2− early BC. Per NCCN, what treatment implication does this have?",
+    opts: ["No treatment implications; PALB2 only affects screening", "PALB2 carriers are eligible for olaparib adjuvant therapy (OlympiA) if high-risk", "PALB2 carriers should receive neratinib", "PALB2 has no approved targeted therapy"],
+    ans: 1,
+    exp: "<strong>OlympiA included gBRCA1/2 AND gPALB2 mutation carriers for adjuvant olaparib in high-risk HER2− BC.</strong> PALB2 is now included in the OlympiA eligibility criteria. NCCN recommends olaparib for gBRCA1/2 AND gPALB2 mutations in high-risk HER2−, early BC after standard therapy. Annual breast MRI surveillance is also recommended for PALB2 carriers.",
+    ref: "NCCN BC v4.2024 – BINV-M; OlympiA updated eligibility 2023"
+  },
+  {
+    cat: "TNBC",
+    q: "A Stage III TNBC patient will receive neoadjuvant chemotherapy. Per NCCN (KEYNOTE-522), how should pembrolizumab be incorporated?",
+    opts: ["Pembrolizumab given only post-operatively if no pCR", "Pembrolizumab + chemotherapy neoadjuvant → surgery → adjuvant pembrolizumab × 9 cycles", "Pembrolizumab only if PD-L1 positive", "Pembrolizumab after radiation only"],
+    ans: 1,
+    exp: "<strong>KEYNOTE-522: Pembrolizumab + chemotherapy neoadjuvant (regardless of PD-L1) → surgery → adjuvant pembrolizumab × 9 cycles.</strong> This regimen improved pCR (64.8% vs 51.2%) and EFS in Stage II-III TNBC regardless of PD-L1 status. NCCN includes this as a Category 1 preferred regimen for eligible patients. Key immune-related adverse events to monitor: pneumonitis, colitis, endocrinopathies.",
+    ref: "NCCN BC v4.2024 – BINV-M; KEYNOTE-522 NEJM 2022 update"
+  }
+];
+
+// ── STATE ────────────────────────────────────────────────────────────────
+let current = 0;
+let answers = new Array(questions.length).fill(null); // null | 'correct' | 'wrong'
+let selectedOpts = new Array(questions.length).fill(null);
+
+// ── INIT ─────────────────────────────────────────────────────────────────
+function init() {
+  renderCatBar();
+  render(0);
+}
+
+function renderCatBar() {
+  const bar = document.getElementById('cat-bar');
+  const cats = [...new Set(questions.map(q => q.cat))];
+  bar.innerHTML = cats.map(c =>
+    `<span class="cat-chip" data-cat="${c}">${c}</span>`
+  ).join('');
+}
+
+function updateCatBar(idx) {
+  const cat = questions[idx].cat;
+  document.querySelectorAll('.cat-chip').forEach(ch => {
+    ch.classList.toggle('active', ch.dataset.cat === cat);
+  });
+}
+
+function render(idx) {
+  const q = questions[idx];
+  document.getElementById('q-num').textContent = String(idx + 1).padStart(2, '0');
+  document.getElementById('q-tag').textContent = q.cat;
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('q-counter').textContent = `Question ${idx + 1} of ${questions.length}`;
+
+  // Progress
+  document.getElementById('progress-fill').style.width = `${((idx + 1) / questions.length) * 100}%`;
+
+  // Score
+  const answered = answers.filter(a => a !== null).length;
+  const correct = answers.filter(a => a === 'correct').length;
+  document.getElementById('score-display').textContent = `⭐ Score: ${correct} / ${answered}`;
+
+  // Options
+  const wrap = document.getElementById('options-wrap');
+  const letters = ['A', 'B', 'C', 'D'];
+  wrap.innerHTML = q.opts.map((opt, i) => {
+    let cls = 'option';
+    if (selectedOpts[idx] !== null) {
+      cls += ' disabled';
+      if (i === q.ans) cls += ' correct';
+      else if (i === selectedOpts[idx] && selectedOpts[idx] !== q.ans) cls += ' wrong';
+    }
+    return `<div class="${cls}" onclick="selectOption(${i})">
+      <div class="opt-letter">${letters[i]}</div>
+      <div class="opt-text">${opt}</div>
+    </div>`;
+  }).join('');
+
+  // Explanation
+  const expEl = document.getElementById('explanation');
+  if (selectedOpts[idx] !== null) {
+    const correct_ = selectedOpts[idx] === q.ans;
+    document.getElementById('exp-icon').className = `exp-icon ${correct_ ? 'c' : 'w'}`;
+    document.getElementById('exp-icon').textContent = correct_ ? '✓' : '✗';
+    document.getElementById('exp-label').className = `exp-label ${correct_ ? 'c' : 'w'}`;
+    document.getElementById('exp-label').textContent = correct_ ? 'Correct!' : 'Incorrect';
+    document.getElementById('exp-text').innerHTML = q.exp;
+    document.getElementById('nccn-ref').textContent = `📚 Reference: ${q.ref}`;
+    expEl.classList.add('show');
+  } else {
+    expEl.classList.remove('show');
+  }
+
+  // Nav
+  document.getElementById('btn-prev').disabled = idx === 0;
+  document.getElementById('btn-next').disabled = selectedOpts[idx] === null && idx < questions.length - 1;
+  document.getElementById('btn-next').textContent = idx === questions.length - 1 ? 'Finish 🏁' : 'Next →';
+
+  updateCatBar(idx);
+
+  // Animate card
+  const card = document.getElementById('q-card');
+  card.style.animation = 'none';
+  card.offsetHeight;
+  card.style.animation = 'fadeUp 0.35s ease both';
+}
+
+function selectOption(optIdx) {
+  if (selectedOpts[current] !== null) return;
+  selectedOpts[current] = optIdx;
+  answers[current] = optIdx === questions[current].ans ? 'correct' : 'wrong';
+  document.getElementById('btn-next').disabled = false;
+  render(current);
+}
+
+function navigate(dir) {
+  const next = current + dir;
+  if (next < 0) return;
+  if (next >= questions.length) {
+    showResults();
+    return;
+  }
+  current = next;
+  render(current);
+}
+
+function showResults() {
+  document.getElementById('q-card').style.display = 'none';
+  document.getElementById('progress-wrap').style.display = 'none';
+  document.getElementById('cat-bar').style.display = 'none';
+  const correct = answers.filter(a => a === 'correct').length;
+  const wrong = answers.filter(a => a === 'wrong').length;
+  const skipped = answers.filter(a => a === null).length;
+  const pct = Math.round((correct / questions.length) * 100);
+  document.getElementById('r-score').textContent = `${pct}%`;
+  document.getElementById('r-correct').textContent = correct;
+  document.getElementById('r-wrong').textContent = wrong;
+  document.getElementById('r-skip').textContent = skipped;
+  let msg = pct >= 80 ? '🎉 Excellent! NCCN-ready!' : pct >= 60 ? '👍 Good effort — review the missed areas.' : '📖 Review NCCN guidelines and retry.';
+  document.getElementById('r-sub').textContent = msg;
+  document.getElementById('results').classList.add('show');
+}
+
+function restartQuiz() {
+  current = 0;
+  answers = new Array(questions.length).fill(null);
+  selectedOpts = new Array(questions.length).fill(null);
+  document.getElementById('q-card').style.display = 'block';
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('cat-bar').style.display = 'flex';
+  document.getElementById('results').classList.remove('show');
+  render(0);
+}
+
+init();
+</script>
+</body>
+</html>
